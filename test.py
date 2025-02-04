@@ -102,5 +102,7 @@ polymer.add_track(shaker_track, percussion_effects)
 polymer.add_track(melody_track, melody_effects)  # Add the melody track
 polymer.add_track(bass_track, bass_effects)  # Add the bass track
 
+polymer.export('test.wav')
+
 # Play the composition
 polymer.loop()

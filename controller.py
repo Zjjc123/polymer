@@ -3,6 +3,7 @@ from typing import List, Optional
 import sounddevice as sd
 from effects import EffectChain
 from scipy import signal
+from scipy.io import wavfile
 
 class PolymerController:
     def __init__(self, bpm: int = 128, sample_rate: int = 44100):
@@ -338,3 +339,14 @@ class PolymerController:
             stream.start()
             while True:
                 sd.sleep(100)
+
+    def export(self, filename: str):
+        """Export the mixed composition to a WAV file
+        
+        Args:
+            filename: Path to save the WAV file
+        """
+        mixed = self.mix()
+        # Ensure the audio is in the correct range (-1 to 1) and convert to 32-bit float
+        mixed = np.clip(mixed, -1, 1).astype(np.float32)
+        wavfile.write(filename, self.sample_rate, mixed)
