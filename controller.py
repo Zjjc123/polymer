@@ -1,11 +1,10 @@
 import numpy as np
 from typing import List, Optional
 import sounddevice as sd
-import time
-from music_theory import MusicTheory
-from effects import EffectChain, Filter, Delay, Distortion, Compressor, Reverb, Chorus
+from effects import EffectChain
+from scipy import signal
 
-class PyHouse:
+class PolymerController:
     def __init__(self, bpm: int = 128, sample_rate: int = 44100):
         self.bpm = bpm
         self.sample_rate = sample_rate
@@ -169,6 +168,100 @@ class PyHouse:
         
         return full_pattern
 
+    def create_snare(self, pattern: List[int]) -> np.ndarray:
+        """Create a snare drum pattern"""
+        duration = 0.1
+        t = np.linspace(0, duration, int(self.sample_rate * duration))
+        
+        # Mix noise and sine waves for snare sound
+        noise = np.random.normal(0, 1, len(t))
+        decay = np.exp(-20 * t)
+        
+        # Add two sine waves for body
+        sine1 = np.sin(2 * np.pi * 200 * t)
+        sine2 = np.sin(2 * np.pi * 180 * t)
+        
+        snare = (noise + 0.5 * sine1 + 0.5 * sine2) * decay
+        
+        # Create full pattern
+        pattern_length = len(pattern)
+        full_pattern = np.zeros(int(self.sample_rate * self.beat_length * pattern_length))
+        
+        for i, hit in enumerate(pattern):
+            if hit:
+                start = int(i * self.sample_rate * self.beat_length)
+                end = start + len(snare)
+                full_pattern[start:end] += snare
+                
+        return full_pattern
+
+    def create_clap(self, pattern: List[int]) -> np.ndarray:
+        """Create a clap sound pattern"""
+        duration = 0.1
+        t = np.linspace(0, duration, int(self.sample_rate * duration))
+        
+        # Create multiple short noise bursts
+        noise = np.random.normal(0, 1, len(t))
+        
+        # Create multiple decay envelopes slightly offset
+        decay1 = np.exp(-30 * t)
+        decay2 = np.roll(decay1, int(0.01 * self.sample_rate))
+        decay3 = np.roll(decay1, int(0.02 * self.sample_rate))
+        decay = decay1 + decay2 + decay3
+        
+        # Apply bandpass filter to noise
+        clap = noise * decay
+        nyquist = self.sample_rate / 2
+        b, a = signal.butter(2, [1000/nyquist, 4000/nyquist], btype='band')
+        clap = signal.filtfilt(b, a, clap)
+        
+        # Create full pattern
+        pattern_length = len(pattern)
+        full_pattern = np.zeros(int(self.sample_rate * self.beat_length * pattern_length))
+        
+        for i, hit in enumerate(pattern):
+            if hit:
+                start = int(i * self.sample_rate * self.beat_length)
+                end = start + len(clap)
+                full_pattern[start:end] += clap
+                
+        return full_pattern
+
+    def create_shaker(self, pattern: List[int]) -> np.ndarray:
+        """Create a shaker pattern
+        
+        Args:
+            pattern: List of 1s and 0s indicating when shaker should play
+            
+        Returns:
+            np.ndarray: The generated shaker pattern
+        """
+        duration = 0.08  # Duration of each shaker sound in seconds
+        t = np.linspace(0, duration, int(self.sample_rate * duration))
+        
+        # Create noise-based shaker sound
+        noise = np.random.normal(0, 1, len(t))
+        
+        # Quick attack, quick decay envelope
+        envelope = np.exp(-40 * t)  # Faster decay than hi-hat
+        
+        # Apply bandpass filter to create characteristic shaker sound
+        nyquist = self.sample_rate / 2
+        b, a = signal.butter(2, [3000/nyquist, 7000/nyquist], btype='band')
+        shaker = signal.filtfilt(b, a, noise * envelope)
+        
+        # Create full pattern
+        pattern_length = len(pattern)
+        full_pattern = np.zeros(int(self.sample_rate * self.beat_length * pattern_length))
+        
+        for i, hit in enumerate(pattern):
+            if hit:
+                start = int(i * self.sample_rate * self.beat_length)
+                end = start + len(shaker)
+                full_pattern[start:end] += shaker
+                
+        return full_pattern
+
     def add_track(self, track: np.ndarray, effects: Optional[EffectChain] = None):
         """Add a track to the composition with optional effects
         
@@ -202,58 +295,46 @@ class PyHouse:
         sd.play(mixed, self.sample_rate)
         sd.wait()
 
-# Example usage
-if __name__ == "__main__":
-    # Create a new PyHouse instance at 128 BPM
-    house = PyHouse(bpm=256)
-    
-    # Create a basic four-on-the-floor kick pattern (4 beats)
-    kick_pattern = [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0]
-    kick_track = house.create_kick(kick_pattern)
-    
-    # Create a hi-hat pattern
-    hihat_pattern = [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1]
-    hihat_track = house.create_hihat(hihat_pattern)
-    
-    # Create a simple bassline (frequencies in Hz)
-    bass_notes = [55, 55, 55, 55, 62, 62, 62, 62, 59, 59, 59, 59, 65, 65, 65, 65]
-    bass_pattern = [1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1]
-    bass_track = house.create_bassline(bass_notes, bass_pattern)
-    
-    # Create a melody using C major scale
-    c_major = MusicTheory.get_scale('C', 'major')
-    melody_notes = [c_major[i] for i in [0, 2, 4, 3, 2, 1, 0]] * 2  # Simple C major melody
-    melody_pattern = [1, 0, 1, 0, 1, 0, 1, 0] * 2
-    melody_track = house.create_synth(melody_notes, melody_pattern,
-                                    waveform='triangle',
-                                    attack=0.05, decay=0.1,
-                                    sustain=0.5, release=0.1)
-    
-    # Create more sophisticated effect chains
-    kick_effects = EffectChain()
-    kick_effects.add_effect(Compressor(threshold=-20, ratio=4.0))
-    kick_effects.add_effect(Filter(cutoff=100, filter_type='lowpass'))
-
-    hihat_effects = EffectChain()
-    hihat_effects.add_effect(Filter(cutoff=8000, filter_type='highpass'))
-    hihat_effects.add_effect(Reverb(room_size=0.3, wet_level=0.2))
-
-    bass_effects = EffectChain()
-    bass_effects.add_effect(Filter(cutoff=500, filter_type='lowpass'))
-    bass_effects.add_effect(Distortion(drive=2.0, mix=0.3))
-    bass_effects.add_effect(Compressor(threshold=-15, ratio=3.0))
-
-    melody_effects = EffectChain()
-    melody_effects.add_effect(Chorus(rate=0.8, depth=0.02, voices=3))
-    melody_effects.add_effect(Delay(delay_time=0.25, feedback=0.4, mix=0.3))
-    melody_effects.add_effect(Reverb(room_size=0.6, wet_level=0.3))
-    melody_effects.add_effect(Filter(cutoff=2000, filter_type='lowpass'))
-
-    # Add tracks with effects
-    house.add_track(kick_track, kick_effects)
-    house.add_track(hihat_track, hihat_effects)
-    house.add_track(bass_track, bass_effects)
-    house.add_track(melody_track, melody_effects)
-    
-    # Play the composition
-    house.play()
+    def loop(self):
+        """Loop the composition continuously without gaps"""
+        mixed = self.mix()  # Mix once outside the loop
+        
+        # Keep track of current position in the audio
+        position = 0
+        
+        def callback(outdata, frames, time, status):
+            nonlocal position
+            if status:
+                print(status)
+            
+            # Calculate how many samples we need
+            remaining = len(mixed) - position
+            
+            if remaining >= frames:
+                # We have enough samples remaining
+                outdata[:] = mixed[position:position + frames].reshape(-1, 1)
+                position += frames
+            else:
+                # We need to wrap around to the beginning
+                # First, fill with remaining samples
+                outdata[:remaining] = mixed[position:].reshape(-1, 1)
+                # Then fill the rest from the beginning
+                outdata[remaining:] = mixed[:frames-remaining].reshape(-1, 1)
+                position = frames - remaining
+            
+            # Reset position if we've reached the end
+            if position >= len(mixed):
+                position = 0
+        
+        # Create continuous stream
+        stream = sd.OutputStream(
+            samplerate=self.sample_rate,
+            channels=2,
+            callback=callback,
+            finished_callback=None
+        )
+        
+        with stream:
+            stream.start()
+            while True:
+                sd.sleep(100)

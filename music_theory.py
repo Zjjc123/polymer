@@ -96,6 +96,26 @@ class MusicTheory:
         scale = MusicTheory.get_scale(root, scale_type, octave)
         return [scale[degree - 1] for degree in progression]
 
+    @staticmethod
+    def note_to_frequency(note_str: str) -> float:
+        """Convert a note string (e.g. 'A4', 'C5') to frequency
+        
+        Args:
+            note_str: Note name with octave (e.g., 'A4', 'C#5')
+            
+        Returns:
+            Frequency in Hz
+        """
+        # Split note and octave
+        if len(note_str) == 2:
+            note = note_str[0]
+            octave = int(note_str[1])
+        else:  # Handle sharps/flats
+            note = note_str[:2]
+            octave = int(note_str[2])
+        
+        return MusicTheory.get_frequency(note, octave)
+
 # Example usage:
 if __name__ == "__main__":
     # Get C major scale
