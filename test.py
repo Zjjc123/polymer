@@ -41,15 +41,21 @@ melody_frequencies = [theory.note_to_frequency(note) for note in melody_notes]
 # Use same pattern as kick for testing
 melody_pattern = [1] * 32
 
-# Create a synth melody track with shorter envelope times
+# Create effect chains
+melody_effects = EffectChain()
+melody_effects.add_effect(Compressor(threshold=-15, ratio=4, attack=0.005, release=0.1))
+melody_effects.add_effect(Reverb(room_size=0.3, damping=0.5, wet_level=0.2))
+melody_effects.add_effect(Chorus(rate=1.5, depth=0.2, mix=0.3))
+
+# Create melody track with effects
 melody_track = polymer.create_synth(
     notes=melody_frequencies, 
     pattern=melody_pattern,
-    attack=0.01,    # Very short attack
-    decay=0.05,     # Short decay
-    sustain=0.7,    # Moderate sustain level
-    release=0.05,    # Short release
-    waveform='sawtooth'  # Use square wave for melody
+    attack=0.01,
+    decay=0.05,
+    sustain=0.7,
+    release=0.05,
+    waveform='sawtooth',
 )
 
 # Create bassline pattern (syncopated with kick)
@@ -63,26 +69,38 @@ bass_notes = ['A2', 'A2', 'F2', 'F2', 'C2', 'C2', 'E2', 'E2',
 # Convert bass notes to frequencies
 bass_frequencies = [theory.note_to_frequency(note) for note in bass_notes]
 
-# Create bass track with appropriate envelope settings
+# Create effect chains
+bass_effects = EffectChain()
+bass_effects.add_effect(Filter(cutoff=500, resonance=0.1, filter_type='lowpass'))
+bass_effects.add_effect(Compressor(threshold=-15, ratio=4, attack=0.01, release=0.2))
+bass_effects.add_effect(Distortion(drive=0.1, mix=0.15))
+bass_effects.add_effect(Reverb(room_size=0.3, damping=0.5, wet_level=0.2))
+
+# Create bass track with effects
 bass_track = polymer.create_synth(
     notes=bass_frequencies,
     pattern=bass_pattern,
-    attack=0.05,    # Quick attack but not too sharp
-    decay=0.05,      # Medium-short decay
-    sustain=0.8,    # Strong sustain
-    release=0.1,    # Longer release for smoother transitions
-    waveform='sine' # Sine wave for clean bass sound
+    attack=0.05,
+    decay=0.05,
+    sustain=0.8,
+    release=0.1,
+    waveform='sine',
 )
 
+percussion_effects = EffectChain()
+percussion_effects.add_effect(Compressor(threshold=-10, ratio=4, attack=0.005, release=0.1))
+percussion_effects.add_effect(Reverb(room_size=0.3, damping=0.5, wet_level=0.2))
+percussion_effects.add_effect(Chorus(rate=1.5, depth=0.2, mix=0.3))
+percussion_effects.add_effect(Filter(cutoff=7000, resonance=0.1, filter_type='lowpass'))
 # Add tracks with effects
-polymer.add_track(kick_track)
-polymer.add_track(hihat1_track)
-polymer.add_track(hihat2_track)
-polymer.add_track(snare_track)
-polymer.add_track(clap_track)
-polymer.add_track(shaker_track)
-polymer.add_track(melody_track)
-polymer.add_track(bass_track)  # Add the bass track
+polymer.add_track(kick_track, percussion_effects)
+polymer.add_track(hihat1_track, percussion_effects)
+polymer.add_track(hihat2_track, percussion_effects)
+polymer.add_track(snare_track, percussion_effects)
+polymer.add_track(clap_track, percussion_effects)
+polymer.add_track(shaker_track, percussion_effects)
+polymer.add_track(melody_track, melody_effects)  # Add the melody track
+polymer.add_track(bass_track, bass_effects)  # Add the bass track
 
 # Play the composition
 polymer.loop()
