@@ -2,6 +2,7 @@ import numpy as np
 from typing import List, Optional
 import sounddevice as sd
 import time
+from music_theory import MusicTheory
 
 class PyHouse:
     def __init__(self, bpm: int = 128, sample_rate: int = 44100):
@@ -178,19 +179,20 @@ if __name__ == "__main__":
     bass_pattern = [1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1]
     bass_track = house.create_bassline(bass_notes, bass_pattern)
     
-    # Create a synth melody
-    synth_notes = [220, 247, 261, 293, 329, 293, 261, 247] * 2
-    synth_pattern = [1, 0, 1, 0, 1, 0, 1, 0] * 2
-    synth_track = house.create_synth(synth_notes, synth_pattern, 
-                                   waveform='sawtooth',
-                                   attack=0.01, decay=0.1,
-                                   sustain=0.7, release=0.1)
+    # Create a melody using C major scale
+    c_major = MusicTheory.get_scale('C', 'major')
+    melody_notes = [c_major[i] for i in [0, 2, 4, 3, 2, 1, 0]] * 2  # Simple C major melody
+    melody_pattern = [1, 0, 1, 0, 1, 0, 1, 0] * 2
+    melody_track = house.create_synth(melody_notes, melody_pattern,
+                                    waveform='triangle',
+                                    attack=0.05, decay=0.1,
+                                    sustain=0.5, release=0.1)
+    house.add_track(melody_track)
     
     # Add all tracks
     house.add_track(kick_track)
     house.add_track(hihat_track)
     house.add_track(bass_track)
-    house.add_track(synth_track)
     
     # Play the composition
     house.play()
