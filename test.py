@@ -6,40 +6,45 @@ from music_theory import MusicTheory
 polymer = PolymerController(bpm=512)
 
 shaker_pattern = [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-                1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+                1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1] * 2
 shaker_track = polymer.create_shaker(shaker_pattern)
 
 hihat1_pattern = [0,0,1,0,0,0,1,1,0,1,1,0,0,0,1,0,
-                0,0,1,0,0,0,1,1,0,1,1,0,0,1,1,1]
+                0,0,1,0,0,0,1,1,0,1,1,0,0,1,1,1] * 2
 hihat1_track = polymer.create_hihat(hihat1_pattern)
 
 hihat2_pattern = [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,
-                1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0]
+                1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0] * 2
 hihat2_track = polymer.create_hihat(hihat2_pattern)
 
 kick_pattern = [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,
-                0,0,0,1,0,0,0,1,0,0,0,1,0,0,0]
-kick_track = polymer.create_kick(kick_pattern)
+                0,0,0,1,0,0,0,1,0,0,0,1,0,0,0] * 2
+kick_track = polymer.create_kick(kick_pattern) 
 
 snare_pattern = [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,
-                0,0,0,1,0,0,0,0,0,0,0,1,0,0,0]
+                0,0,0,1,0,0,0,0,0,0,0,1,0,0,0] * 2
 snare_track = polymer.create_snare(snare_pattern)
 
 clap_pattern = snare_pattern
 clap_track = polymer.create_clap(clap_pattern)
 
 # Create a melodic pattern using notes from A minor scale (simplified)
+
 melody_notes = ['A3', 'C4', 'E4', 'A4', 'G4', 'E4', 'C4', 'A3',
                 'A3', 'C4', 'F4', 'A4', 'G4', 'E4', 'C4', 'E4',
                 'A3', 'C4', 'E4', 'A4', 'G4', 'E4', 'C4', 'A3',
-                'C4', 'E4', 'G4', 'E4', 'C4', 'A3', 'G3', 'E3']
+                'C4', 'E4', 'G4', 'E4', 'C4', 'A3', 'G3', 'E3',
+                'A3', 'E4', 'C4', 'A3', 'E4', 'C4', 'D4', 'E4',
+                'F4', 'A4', 'G4', 'E4', 'F4', 'D4', 'C4', 'E4',
+                'A3', 'E4', 'C4', 'A3', 'G4', 'E4', 'D4', 'C4',
+                'F4', 'D4', 'E4', 'C4', 'A3', 'G3', 'E3', 'A3']
 
 # Convert note names to frequencies
 theory = MusicTheory()
 melody_frequencies = [theory.note_to_frequency(note) for note in melody_notes]
 
 # Use same pattern as kick for testing
-melody_pattern = [1] * 32
+melody_pattern = [1,1,0,1,0,1,1,1] * 8
 
 # Create effect chains
 melody_effects = EffectChain()
@@ -60,11 +65,11 @@ melody_track = polymer.create_synth(
 
 # Create bassline pattern (syncopated with kick)
 bass_pattern = [1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,0,
-                1,0,0,1,0,0,1,0,0,1,0,0,1,0,1,0]
+                1,0,0,1,0,0,1,0,0,1,0,0,1,0,1,0] * 2
 
 # Bass notes following the chord progression (A minor)
 bass_notes = ['A2', 'A2', 'F2', 'F2', 'C2', 'C2', 'E2', 'E2',
-              'A2', 'A2', 'F2', 'F2', 'C2', 'C2', 'E2', 'E2'] * 2
+              'A2', 'A2', 'F2', 'F2', 'C2', 'C2', 'E2', 'E2'] * 4
 
 # Convert bass notes to frequencies
 bass_frequencies = [theory.note_to_frequency(note) for note in bass_notes]
@@ -102,7 +107,7 @@ polymer.add_track(shaker_track, percussion_effects)
 polymer.add_track(melody_track, melody_effects)  # Add the melody track
 polymer.add_track(bass_track, bass_effects)  # Add the bass track
 
-polymer.export('test.wav')
+# polymer.export('test.wav')
 
 # Play the composition
 polymer.loop()
