@@ -12,6 +12,8 @@ class PolymerController:
         self._update_beat_length()
         self.tracks = []
         self.track_effects = []  # List of effect chains for each track
+        self.track_volumes = []  # List of volume levels for each track
+        self.master_volume = 1.0  # Master volume control
 
     def _update_beat_length(self):
         """Update beat length based on current BPM"""
@@ -116,7 +118,7 @@ class PolymerController:
         Args:
             notes: List of frequencies in Hz
             pattern: List of 1s and 0s indicating when notes should play
-            waveform: Type of waveform ('sine', 'square', 'sawtooth', 'triangle')
+            waveform: Type of waveform ('sine', 'square', 'sawtooth', 'triangle', 'quad_saw')
             attack: Attack time in seconds
             decay: Decay time in seconds
             sustain: Sustain level (0-1)
@@ -140,6 +142,14 @@ class PolymerController:
                     wave = 2 * (note * t % 1) - 1
                 elif waveform == 'triangle':
                     wave = 2 * np.abs(2 * (note * t % 1) - 1) - 1
+                elif waveform == 'quad_saw':
+                    # Create 4 detuned sawtooth waves
+                    detune_factors = [0.98, 1.0, 1.02, 1.04]  # Slight detuning
+                    wave = np.zeros_like(t)
+                    for factor in detune_factors:
+                        detuned_freq = note * factor
+                        wave += 2 * (detuned_freq * t % 1) - 1
+                    wave = wave / len(detune_factors)  # Normalize
                 else:
                     wave = np.sin(2 * np.pi * note * t)  # Default to sine
                 
@@ -263,31 +273,59 @@ class PolymerController:
                 
         return full_pattern
 
-    def add_track(self, track: np.ndarray, effects: Optional[EffectChain] = None):
-        """Add a track to the composition with optional effects
+    def add_track(self, track: np.ndarray, effects: Optional[EffectChain] = None, volume: float = 1.0):
+        """Add a track to the composition with optional effects and volume
         
         Args:
             track: Audio track data
             effects: Optional effect chain to apply to the track
+            volume: Volume level for the track (0.0 to 1.0)
         """
         self.tracks.append(track)
         self.track_effects.append(effects if effects else EffectChain())
+        self.track_volumes.append(max(0.0, min(1.0, volume)))  # Clamp volume between 0 and 1
+
+    def set_track_volume(self, track_index: int, volume: float):
+        """Set the volume for a specific track
+        
+        Args:
+            track_index: Index of the track to adjust
+            volume: New volume level (0.0 to 1.0)
+        """
+        if 0 <= track_index < len(self.tracks):
+            self.track_volumes[track_index] = max(0.0, min(1.0, volume))
+
+    def set_master_volume(self, volume: float):
+        """Set the master volume level
+        
+        Args:
+            volume: New master volume level (0.0 to 1.0)
+        """
+        self.master_volume = max(0.0, min(1.0, volume))
 
     def mix(self) -> np.ndarray:
-        """Mix all tracks together with their effects"""
+        """Mix all tracks together with their effects and volume levels"""
         if not self.tracks:
             return np.array([])
             
         max_length = max(len(track) for track in self.tracks)
         mixed = np.zeros(max_length)
         
-        for track, effects in zip(self.tracks, self.track_effects):
+        for track, effects, volume in zip(self.tracks, self.track_effects, self.track_volumes):
             # Process track through its effect chain
             processed = effects.process(track, self.sample_rate)
+            # Apply track volume
+            processed = processed * volume
             mixed[:len(processed)] += processed
             
-        # Normalize
-        mixed = mixed / np.max(np.abs(mixed))
+        # Apply master volume
+        mixed = mixed * self.master_volume
+            
+        # Normalize if the signal exceeds [-1, 1]
+        max_amplitude = np.max(np.abs(mixed))
+        if max_amplitude > 1.0:
+            mixed = mixed / max_amplitude
+            
         return mixed
 
     def play(self):

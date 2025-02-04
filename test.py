@@ -89,11 +89,11 @@ bass_track = polymer.create_synth(
     decay=0.05,
     sustain=0.8,
     release=0.1,
-    waveform='sine',
+    waveform='quad_saw',
 )
 
 percussion_effects = EffectChain()
-percussion_effects.add_effect(Compressor(threshold=-10, ratio=4, attack=0.005, release=0.1))
+percussion_effects.add_effect(Compressor(threshold=-20, ratio=4, attack=0.005, release=0.1))
 percussion_effects.add_effect(Reverb(room_size=0.3, damping=0.5, wet_level=0.2))
 percussion_effects.add_effect(Chorus(rate=1.5, depth=0.2, mix=0.3))
 percussion_effects.add_effect(Filter(cutoff=7000, resonance=0.1, filter_type='lowpass'))
@@ -107,7 +107,7 @@ polymer.add_track(shaker_track, percussion_effects)
 polymer.add_track(melody_track, melody_effects)  # Add the melody track
 polymer.add_track(bass_track, bass_effects)  # Add the bass track
 
-# polymer.export('test.wav')
+polymer.export('test.wav')
 
 # Play the composition
 polymer.loop()
